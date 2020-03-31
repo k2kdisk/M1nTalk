@@ -40,6 +40,11 @@ classes = [
 task = kpu.load(0x500000)
 anchor = (1.08, 1.19, 3.42, 4.41, 6.63, 11.38, 9.42, 5.11, 16.62, 10.52)
 nw = kpu.init_yolo2(task, 0.5, 0.3, 5, anchor)
+
+avg_len = 5
+count = [[0] * avg_len for i in range(len(classes))]
+idx = 0
+
 while(True):
     clock.tick()
 
@@ -48,13 +53,23 @@ while(True):
 
     infostr = str(clock.fps()) + ' : '
 
+    for i in range(len(classes)):
+        count[i][idx] = 0
+
     if code:
         for i in code:
-            curClass = classes[i.classid()]
-            infostr = infostr + curClass[0] + ', '
-            if curClass[1]:
-                uart.write(curClass[1] + 'ga,iruyo\r')
+            infostr = infostr + classes[i.classid()][0] + ', '
+            count[i.classid()][idx] = 1
+
+    for i in range(len(classes)):
+        if sum(count[i]) > avg_len/2:
+            if classes[i][1]:
+                uart.write(classes[i][1] + 'gairuyo\r')
+
     print(infostr)
+    #print(count)
+
+    idx = (idx + 1) % avg_len
 model = kpu.deinit(task)
 
 uart.deinit ()
